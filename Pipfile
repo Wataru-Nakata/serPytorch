@@ -8,6 +8,12 @@ verify_ssl = true
 [packages]
 torchaudio = "*"
 torch = "*"
+scipy = "*"
+librosa = "*"
+pytorch-lightning = "*"
+pandas = "*"
+ipykernel = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"

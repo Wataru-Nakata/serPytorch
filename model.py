@@ -19,8 +19,8 @@ class AttentionDecoder(nn.Module):
     self.final = nn.Linear(output_size, vocab_size)
   
   def init_hidden(self):
-    return (torch.zeros(1, 1, self.output_size),
-      torch.zeros(1, 1, self.output_size))
+    return (torch.zeros(1, 1, self.output_size).cuda(),
+      torch.zeros(1, 1, self.output_size).cuda())
   
   def forward(self, decoder_hidden, encoder_outputs):
     
@@ -43,20 +43,21 @@ class SERModel(nn.Module):
     def __init__(self):
         super(SERModel, self).__init__()
         self.convs = nn.Sequential(
-            nn.Conv2d(3,128,(5,3),padding=(2,1)),
+            nn.Conv2d(3,128,(3,5),padding=(1,2)),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(),
             nn.MaxPool2d(2,2),
-            nn.Conv2d(128,256,(5,3),padding=(2,1)),
+            nn.Conv2d(128,256,(3,5),padding=(1,2)),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(),
             nn.MaxPool2d(2,2)
         )
         self.delta = torchaudio.transforms.ComputeDeltas()
-        self.lstm = torch.nn.LSTM(5120,128,batch_first=False)
-        self.attention = AttentionDecoder(128,128,4)
+        self.linear = nn.Linear(256*20,200)
+        self.lstm = torch.nn.LSTM(200,128,batch_first=False,bidirectional=True)
+        self.attention = AttentionDecoder(256,256,4)
         self.decoder_hidden = self.attention.init_hidden()
-        self.classifier = torch.nn.Linear(128,4)
+        self.classifier = torch.nn.Linear(256,4)
     def forward(self,x):
         delta_x = self.delta(x)
         delta_delta_x = self.delta(delta_x)
@@ -65,10 +66,16 @@ class SERModel(nn.Module):
         delta_delta_x = delta_delta_x.unsqueeze(1)
         cnn_in_feature = torch.cat([x,delta_x,delta_delta_x],dim=1)
         phi_low = self.convs(cnn_in_feature)
-        phi_low = phi_low.transpose(3,1).reshape(x.size(0),43,-1)
+        phi_low = phi_low.transpose(3,1).reshape(x.size(0),64,-1)
+        phi_low = self.linear(phi_low)
         phi_low  = phi_low.transpose(0,1)
         phi_middle, _ = self.lstm(phi_low)
-        phi_atteniton, weights = self.attention(self.decoder_hidden,phi_middle)
+        phi_middle = phi_middle.transpose(0,1)
+
+        phi_atteniton, weights = self.attention(self.decoder_hidden,phi_middle[0].unsqueeze(1))
+        for i in range(1,x.size(0)):
+            atteniton_out2, weights = self.attention(self.decoder_hidden,phi_middle[i].unsqueeze(1))
+            phi_atteniton = torch.cat([phi_atteniton,atteniton_out2],dim=0)
         out = self.classifier(phi_atteniton)
         return out
     def get_intermediate_features(self,x):

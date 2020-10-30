@@ -39,11 +39,11 @@ class MelEmoLoader(torch.utils.data.Dataset):
     def get_mel(self, filename):
         if not self.load_mel_from_disk:
             audio, sampling_rate = load_wav_to_torch(filename)
-            if len(audio)  > sampling_rate*2:
-                start = random.randint(0,len(audio)- sampling_rate*2)
-                audio= audio[start:start+sampling_rate*2]
+            if len(audio)  > sampling_rate*3:
+                start = random.randint(0,len(audio)- sampling_rate*3)
+                audio= audio[start:start+sampling_rate*3]
             else:
-                dummy = torch.zeros(sampling_rate*2)
+                dummy = torch.zeros(sampling_rate*3)
                 dummy[:len(audio)] = audio
                 audio = dummy
             if sampling_rate != self.stft.sampling_rate:

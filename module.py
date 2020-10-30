@@ -12,6 +12,7 @@ class SER(LightningModule):
         super().__init__()
         self.model = model.SERModel()
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.lr = 0.01
     
     def forward(self,x):
         return self.model.forward(x)
@@ -22,6 +23,12 @@ class SER(LightningModule):
         loss = self.criterion(logits,y)
         self.log('train_loss', loss, on_step=True)
         return loss
+    def validation_step(self,batch,batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits,y)
+        self.log('val_loss', loss, on_step=True)
+        return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.01)
+        return torch.optim.Adam(self.parameters(), lr=self.lr)

@@ -11,10 +11,10 @@ class SER(LightningModule):
     def __init__(self):
         super().__init__()
         self.model = model.SERModel()
-        self.criterion = torch.nn.BCEWithLogitsLoss()
+        self.criterion = torch.nn.CrossEntropyLoss()
     
-    def forward(self):
-        return model.forward()
+    def forward(self,x):
+        return self.model.forward(x)
     
     def training_step(self,batch, batch_idx):
         x, y = batch
@@ -22,15 +22,6 @@ class SER(LightningModule):
         loss = self.criterion(logits,y)
         self.log('train_loss', loss, on_step=True)
         return loss
-
-    def train_dataloader(self):
-        pass
-
-    def val_dataloader(self):
-        pass
-
-    def test_dataloader(self):
-        pass
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.01)

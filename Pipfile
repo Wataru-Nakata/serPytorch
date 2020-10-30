@@ -14,6 +14,9 @@ pytorch-lightning = "*"
 pandas = "*"
 ipykernel = "*"
 matplotlib = "*"
+scikit-learn = "*"
+pylint = "*"
+tensorflow = "==1.15"
 
 [requires]
 python_version = "3.7"

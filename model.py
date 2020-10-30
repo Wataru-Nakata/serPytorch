@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch
-import torch.functional as F
+import torch.nn.functional as F
 import torchaudio
+import numpy as np 
 
 
 '''
@@ -15,19 +16,16 @@ class AttentionDecoder(nn.Module):
     self.output_size = output_size
     
     self.attn = nn.Linear(hidden_size + output_size, 1)
-    self.lstm = nn.LSTM(hidden_size + vocab_size, output_size) #if we are using embedding hidden_size should be added with embedding of vocab size
     self.final = nn.Linear(output_size, vocab_size)
   
   def init_hidden(self):
     return (torch.zeros(1, 1, self.output_size),
       torch.zeros(1, 1, self.output_size))
   
-  def forward(self, decoder_hidden, encoder_outputs, input):
+  def forward(self, decoder_hidden, encoder_outputs):
     
     weights = []
     for i in range(len(encoder_outputs)):
-      print(decoder_hidden[0][0].shape)
-      print(encoder_outputs[0].shape)
       weights.append(self.attn(torch.cat((decoder_hidden[0][0], 
                                           encoder_outputs[i]), dim = 1)))
     normalized_weights = F.softmax(torch.cat(weights, 1), 1)
@@ -35,16 +33,13 @@ class AttentionDecoder(nn.Module):
     attn_applied = torch.bmm(normalized_weights.unsqueeze(1),
                              encoder_outputs.view(1, -1, self.hidden_size))
     
-    output = torch.cat((attn_applied[0], input[0]), dim = 1) #if we are using embedding, use embedding of input here instead
-    
-    
-    output = torch.sum(output,1)
+    output = torch.sum(attn_applied,1)
     
     return output, normalized_weights
 
 
 
-class SERModel(torch.nn.module):
+class SERModel(nn.Module):
     def __init__(self):
         super(SERModel, self).__init__()
         self.convs = nn.Sequential(
@@ -58,18 +53,24 @@ class SERModel(torch.nn.module):
             nn.MaxPool2d(2,2)
         )
         self.delta = torchaudio.transforms.ComputeDeltas()
-        self.lstm = torch.nn.LSTM()
-        self.attention = AttentionDecoder()
-        self.classifier = nn.Linear(128,8)
+        self.lstm = torch.nn.LSTM(5120,128,batch_first=False)
+        self.attention = AttentionDecoder(128,128,4)
+        self.decoder_hidden = self.attention.init_hidden()
+        self.classifier = torch.nn.Linear(128,4)
     def forward(self,x):
         delta_x = self.delta(x)
         delta_delta_x = self.delta(delta_x)
-        cnn_in_feature = torch.cat(x,delta_x,delta_delta_x,dim=1)
-        phi_low = self.convs(x)
-        phi_middle = self.lstm(phi_low)
-        phi_atteniton = self.attention(phi_middle)
-        output = self.classifier(phi_atteniton)
-        return output
+        x = x.unsqueeze(1)
+        delta_x = delta_x.unsqueeze(1)
+        delta_delta_x = delta_delta_x.unsqueeze(1)
+        cnn_in_feature = torch.cat([x,delta_x,delta_delta_x],dim=1)
+        phi_low = self.convs(cnn_in_feature)
+        phi_low = phi_low.transpose(3,1).reshape(x.size(0),43,-1)
+        phi_low  = phi_low.transpose(0,1)
+        phi_middle, _ = self.lstm(phi_low)
+        phi_atteniton, weights = self.attention(self.decoder_hidden,phi_middle)
+        out = self.classifier(phi_atteniton)
+        return out
     def get_intermediate_features(self,x):
         phi_low = self.convs(x)
         phi_middle = self.lstm(phi_low)

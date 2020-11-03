@@ -1,2 +1,4 @@
 {
+    "editor.emptySelectionClipboard": false,
+    "python.pythonPath": "/home/nakata/.local/share/virtualenvs/ser-pytorch-ZXGm-0lL/bin/python"
 }

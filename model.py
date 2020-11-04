@@ -38,20 +38,20 @@ class SERModel(nn.Module):
     def __init__(self):
         super(SERModel, self).__init__()
         self.convs = nn.Sequential(
-            nn.Conv2d(3,128,(3,5),padding=(1,2)),
+            nn.Conv2d(3,128,(7,5),padding=(3,2)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(128),
             nn.MaxPool2d(2,2),
-            nn.Conv2d(128,256,(3,5),padding=(1,2)),
+            nn.Conv2d(128,256,(7,5),padding=(3,2)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(3,5),padding=(1,2)),
+            nn.Conv2d(256,256,(7,5),padding=(3,2)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(3,5),padding=(1,2)),
+            nn.Conv2d(256,256,(7,5),padding=(3,2)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(3,5),padding=(1,2)),
+            nn.Conv2d(256,256,(7,5),padding=(3,2)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
         )
@@ -72,7 +72,7 @@ class SERModel(nn.Module):
         delta_delta_x = delta_delta_x.unsqueeze(1)
         cnn_in_feature = torch.cat([x,delta_x,delta_delta_x],dim=1)
         phi_low = self.convs(cnn_in_feature)
-        phi_low = phi_low.transpose(3,1).reshape(x.size(0),129,-1)
+        phi_low = phi_low.transpose(3,1).reshape(x.size(0),x.size(3)//2,-1)
         phi_low = self.linear(phi_low)
         phi_low  = phi_low.transpose(0,1)
         phi_middle, _ = self.lstm(phi_low)

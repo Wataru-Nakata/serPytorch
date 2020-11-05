@@ -37,21 +37,25 @@ class SERModel(nn.Module):
         super(SERModel, self).__init__()
         self.convs = nn.Sequential(
             nn.Conv2d(3,128,(7,11),padding=(3,5)),
-            nn.LeakyReLU(),
             nn.BatchNorm2d(128),
+            nn.LeakyReLU(),
+            nn.Dropout2d(),
             nn.MaxPool2d(2,2),
             nn.Conv2d(128,256,(7,11),padding=(3,5)),
-            nn.LeakyReLU(),
             nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+            nn.Dropout2d(),
             nn.Conv2d(256,256,(7,11),padding=(3,5)),
-            nn.LeakyReLU(),
             nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+            nn.Dropout2d(),
             nn.Conv2d(256,256,(7,11),padding=(3,5)),
-            nn.LeakyReLU(),
             nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
+            nn.Dropout2d(),
             nn.Conv2d(256,256,(7,11),padding=(3,5)),
-            nn.LeakyReLU(),
             nn.BatchNorm2d(256),
+            nn.LeakyReLU(),
         )
         self.delta = torchaudio.transforms.ComputeDeltas()
         self.linear = nn.Linear(256*40,200)

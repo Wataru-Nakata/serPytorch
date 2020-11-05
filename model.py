@@ -20,15 +20,13 @@ class AttentionDecoder(nn.Module):
   
   def forward(self, encoder_outputs):
     
-    weights = []
-    for i in range(len(encoder_outputs)):
-      weights.append(self.attn(encoder_outputs[i]))
-    normalized_weights = F.softmax(torch.cat(weights, 0), 0)
-    normalized_weights = normalized_weights.unsqueeze(1).repeat(1,256)
+    weights = (self.attn(encoder_outputs))
+    normalized_weights = F.softmax(weights, 1)
+    normalized_weights = normalized_weights.repeat(1,1,256)
     
     attn_applied = torch.mul(encoder_outputs,normalized_weights)
     
-    output = torch.sum(attn_applied,0)
+    output = torch.sum(attn_applied,1)
     
     return output, normalized_weights
 
@@ -38,20 +36,20 @@ class SERModel(nn.Module):
     def __init__(self):
         super(SERModel, self).__init__()
         self.convs = nn.Sequential(
-            nn.Conv2d(3,128,(7,5),padding=(3,2)),
+            nn.Conv2d(3,128,(7,11),padding=(3,5)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(128),
             nn.MaxPool2d(2,2),
-            nn.Conv2d(128,256,(7,5),padding=(3,2)),
+            nn.Conv2d(128,256,(7,11),padding=(3,5)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(7,5),padding=(3,2)),
+            nn.Conv2d(256,256,(7,11),padding=(3,5)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(7,5),padding=(3,2)),
+            nn.Conv2d(256,256,(7,11),padding=(3,5)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
-            nn.Conv2d(256,256,(7,5),padding=(3,2)),
+            nn.Conv2d(256,256,(7,11),padding=(3,5)),
             nn.LeakyReLU(),
             nn.BatchNorm2d(256),
         )
@@ -62,6 +60,8 @@ class SERModel(nn.Module):
         self.classifier = torch.nn.Sequential(
             torch.nn.BatchNorm1d(256),
             torch.nn.Linear(256,64),
+            torch.nn.Dropout(),
+            torch.nn.ReLU(),
             torch.nn.Linear(64,4)
         )
     def forward(self,x):
@@ -78,12 +78,8 @@ class SERModel(nn.Module):
         phi_middle, _ = self.lstm(phi_low)
         phi_middle = phi_middle.transpose(0,1)
 
-        attentions = []
-        for i in range(x.size(0)):
-            phi_atteniton, weights = self.attention(phi_middle[i])
-            attentions.append(phi_atteniton.unsqueeze(0))
-        attentions = torch.cat(attentions,dim=0)
-        out = self.classifier(attentions)
+        phi_atteniton, weights = self.attention(phi_middle)
+        out = self.classifier(phi_atteniton)
         return out
     def get_intermediate_features(self,x):
         phi_low = self.convs(x)

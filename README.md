@@ -15,14 +15,14 @@ For tensorflow implimentation check out [author's repository](https://github.com
 
 # Installation
 ```
-cd directory_of_this_repository
+cd path_to_this_repository
 pipenv --python 3
 ```
 
 # Training
 ## download dataset
 You need to download IEMOCAP corpus as training data.
-Labels for each sentences are given in `filelists/iemocap.csv`. I have split them in to train/val and saved in `filelists/iemocap_train.csv` `filelists/iemocap_val.csv`
+Labels for each sentences are given in `filelists/iemocap.csv`. I have split them into train/val and saved in `filelists/iemocap_train.csv` `filelists/iemocap_val.csv`
 
 ## run training
 ```

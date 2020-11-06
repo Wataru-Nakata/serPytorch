@@ -78,10 +78,16 @@ class SERModel(nn.Module):
         out = self.classifier(phi_atteniton)
         return out
     def get_intermediate_features(self,x):
-        phi_low = self.convs(x)
-        phi_middle = self.lstm(phi_low)
-        phi_atteniton = self.attention(phi_middle)
-        return phi_low, phi_middle, phi_atteniton
+        delta_x = self.delta(x)
+        delta_delta_x = self.delta(delta_x)
+        x = x.unsqueeze(1)
+        delta_x = delta_x.unsqueeze(1)
+        delta_delta_x = delta_delta_x.unsqueeze(1)
+        cnn_in_feature = torch.cat([x,delta_x,delta_delta_x],dim=1)
+        phi_low = self.convs(cnn_in_feature)
+        phi_low = phi_low.transpose(3,1).reshape(x.size(0),x.size(3)//2,-1)
+        phi_low = self.linear(phi_low)
+        return phi_low
 
 
 

@@ -1,7 +1,7 @@
 import torch
 from utils import load_filepaths_and_text
 from pytorch_lightning.core.lightning import LightningModule
-import model
+from serPytorch import model
 import pytorch_lightning as pl
 
 class SER(LightningModule):
